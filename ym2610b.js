@@ -10,6 +10,8 @@ class LoopCommand extends Command {
 class WaitCommand extends Command {
 	constructor(length) {
 		super();
+		if (length <= 0)
+			throw new Error("Wait must be positive and greater than zero.");
 		this.length = length;
 	}
 }
@@ -251,8 +253,12 @@ export class YM2610 {
 				writeByte(command.register & 0xFF);
 				writeByte(command.value);
 			} else if (command instanceof WaitCommand) {
-				writeByte(0x61);
-				writeWord(command.length);
+				if (command.length <= 16) {
+					writeByte(0x70 + command.length - 1);
+				} else {
+					writeByte(0x61);
+					writeWord(command.length);
+				}
 				totalSamples += command.length;
 			} else if (command instanceof LoopCommand) {
 				loopOffset = output.length;
