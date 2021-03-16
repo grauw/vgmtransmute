@@ -1,0 +1,16 @@
+{
+	"name": "vgmtransmute",
+	"version": "1.0.0",
+	"description": "VGM chip transmuter",
+	"author": "Laurens Holst",
+	"license": "BSD-2-Clause",
+	"repository": {
+		"type": "hg",
+		"url": "https://hg.sr.ht/~grauw/vgmtransmute"
+	},
+	"type": "module",
+	"private": true,
+	"bin": {
+		"vgmtransmute": "cli.js"
+	}
+}
