@@ -35,4 +35,8 @@ Target CHIPs:
 
   * ym2610b
 
+Options:
+
+  * `-sa` SSG attenuation in dB.
+
 The source and target files can also be compressed vgz files.

@@ -1,5 +1,6 @@
 import { ym2608Rhythm } from "./ym2608rhythm.js";
 import { ADPCM } from "./adpcm.js";
+import { clamp } from "./utils.js";
 
 class Command {
 }
@@ -174,6 +175,23 @@ export class YM2610 {
 				throw new Error(`Unsupported command ${type.toString(16)} at address ${(address - 1).toString(16)}`);
 			}
 		}
+	}
+
+	attenuateSSG(dB) {
+		const commands = [];
+		for (const command of this.commands) {
+			if (command instanceof YM2610Command) {
+				const { register, value } = command;
+				if (register >= 0x008 && register < 0x00B && value < 0x10) {
+					commands.push(new YM2610Command(register, clamp(Math.round(value + dB / 3), 0, 15)));
+				} else {
+					commands.push(command);
+				}
+			} else {
+				commands.push(command);
+			}
+		}
+		this.commands = commands;
 	}
 
 	optimize() {

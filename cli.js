@@ -8,27 +8,63 @@ const gunzip = util.promisify(zlib.gunzip);
 const gzip = util.promisify(zlib.gzip);
 
 async function main() {
-	if (process.argv.length < 5) {
-		console.log("vgmtransmute CHIP input.vgm output.vgm");
+	const cli = new CLI();
+	cli.parse(process.argv);
+
+	if (!cli.outputPath) {
+		console.log("vgmtransmute [options] CHIP input.vgm output.vgm");
 		console.log();
 		console.log("Target CHIPs:");
 		console.log("  ym2610b");
+		console.log();
+		console.log("Options:");
+		console.log("  -sa  SSG attenuation in dB.");
 		process.exit(1);
 	}
 
-	const chip = process.argv[2];
-	const inputPath = process.argv[3];
-	const outputPath = process.argv[4];
-
-	if (chip == "ym2610b") {
+	if (cli.chip == "ym2610b") {
 		const ym2610 = new YM2610();
-		ym2610.read(await readFile(inputPath));
+		ym2610.read(await readFile(cli.inputPath));
+		if (cli.ssgAttenuation) {
+			ym2610.attenuateSSG(-cli.ssgAttenuation);
+		}
 		ym2610.optimize();
-		await writeFile(outputPath, ym2610.write());
+		await writeFile(cli.outputPath, ym2610.write());
 	} else {
 		throw new Error(`Unknown chip: ${chip}`);
 	}
 }
+
+class CLI {
+	constructor() {
+		this.ssgAttenuation = 0;
+		this.chip = null;
+		this.inputPath = null;
+		this.outputPath = null;
+	}
+
+	parse(argv) {
+		for (let i = 2; i < argv.length; i++) {
+			const arg = argv[i];
+			if (arg[0] == "-") {
+				if (arg == "-sa") {
+					this.ssgAttenuation = Number(argv[++i]);
+					if (isNaN(this.ssgAttenuation))
+						throw new Error("Invalid argument.");
+				}
+			} else if (!this.chip) {
+				this.chip = arg;
+			} else if (!this.inputPath) {
+				this.inputPath = arg;
+			} else if (!this.outputPath) {
+				this.outputPath = arg;
+			} else {
+				throw new Error("Too many arguments.");
+			}
+		}
+	}
+}
+
 
 async function readFile(path) {
 	let buffer = await fs.promises.readFile(path);
