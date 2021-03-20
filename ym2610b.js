@@ -1,4 +1,4 @@
-import { ym2608Rhythm } from "./ym2608rhythm.js";
+import { YM2608 } from "./ym2608.js";
 import { ADPCM } from "./adpcm.js";
 import { clamp } from "./utils.js";
 
@@ -64,7 +64,7 @@ class YM2610ADPCMSample {
 	}
 }
 
-export class YM2610 {
+export class YM2610VGM {
 	constructor() {
 		this.frequency = 0;
 		this.commands = [];
@@ -98,8 +98,10 @@ export class YM2610 {
 			}
 		}
 
-		for (let i = 0; i < ym2608Rhythm.length; i++) {
-			const sampleData = i < 4 ? ym2608Rhythm[i] : ADPCM.encode2x(ADPCM.decode(ym2608Rhythm[i]));
+		const ym2608 = new YM2608(this.frequency);
+
+		for (let i = 0; i < ym2608.rhythm.length; i++) {
+			const sampleData = i < 4 ? ym2608.rhythm[i] : ADPCM.encode2x(ADPCM.decode(ym2608.rhythm[i]));
 			const sample = this.adpcmA.addSampleData(sampleData);
 			this.addCommand(new YM2610Command(0x110 + i, (sample.start >> 8) & 0xFF));
 			this.addCommand(new YM2610Command(0x118 + i, (sample.start >> 16) & 0xFF));
@@ -112,10 +114,7 @@ export class YM2610 {
 		const readWord = () => readByte() | readByte() << 8;
 		const readDoubleWord = () => readWord() | readWord() << 16;
 
-		const adpcmData = [];
 		const adpcmMap = new Map();
-		const ym2608regs = new Array(512).fill(0);
-		let ym2608MemAddress = 0;
 		while (address < input.length) {
 			if (address == loop)
 				this.addCommand(new LoopCommand());
@@ -131,12 +130,11 @@ export class YM2610 {
 					this.addCommand(new YM2610Command(register, value));
 				} else if (register >= 0x100 && register < 0x10C) {
 					if (register == 0x100 && (value & 0xE0) == 0xA0) {
-						const shift = (ym2608regs[0x101] & 0x03) == 0x00 ? 2 : 5;
-						const start = (ym2608regs[0x103] << 8 | ym2608regs[0x102]) << shift;
-						const end = (ym2608regs[0x105] << 8 | ym2608regs[0x104]) + 1 << shift;
+						const start = ym2608.getMemoryStart();
+						const end = ym2608.getMemoryEnd();
 						const hash = end << 18 | start;
 						if (!adpcmMap.has(hash)) {
-							const sample = this.adpcmB.addSampleData(adpcmData.slice(start, end));
+							const sample = this.adpcmB.addSampleData(ym2608.getMemorySlice(start, end));
 							adpcmMap.set(hash, sample);
 						}
 						const sample = adpcmMap.get(hash);
@@ -145,20 +143,13 @@ export class YM2610 {
 						this.addCommand(new YM2610Command(0x014, ((sample.end - 1) >> 8) & 0xFF));
 						this.addCommand(new YM2610Command(0x015, ((sample.end - 1) >> 16) & 0xFF));
 					}
-					if (register == 0x108 && (ym2608regs[0x100] & 0xE0) == 0x60) {
-						adpcmData[ym2608MemAddress++] = value;
-					}
 					if (register < 0x102 || register >= 0x109) {
 						this.addCommand(new YM2610Command(register - 0xF0, value));
 					}
 				} else if (register >= 0x130 && register < 0x200) {
 					this.addCommand(new YM2610Command(register, value));
 				}
-				ym2608regs[register] = value;
-				if (register == 0x102 || register == 0x103) {
-					const shift = (ym2608regs[0x101] & 0x03) == 0x00 ? 2 : 5;
-					ym2608MemAddress = (ym2608regs[0x103] << 8 | ym2608regs[0x102]) << shift;
-				}
+				ym2608.setRegister(register, value);
 			} else if (type == 0x61) {
 				this.addCommand(new WaitCommand(readWord()));
 			} else if (type == 0x62) {
@@ -175,8 +166,8 @@ export class YM2610 {
 				const size = readDoubleWord() - 8;
 				const romSize = readDoubleWord();
 				const startAddress = readDoubleWord();
-				for (let i = 0; i < size; i++) {
-					adpcmData[startAddress + i] = readByte();
+				for (let address = startAddress; address < startAddress + size; address++) {
+					ym2608.setMemory(address, readByte());
 				}
 			} else if (type >= 0x70 && type < 0x80) {
 				this.addCommand(new WaitCommand((type & 15) + 1));

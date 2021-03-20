@@ -2,7 +2,7 @@
 import fs from "fs";
 import zlib from "zlib";
 import util from "util";
-import { YM2610 } from "./ym2610b.js"
+import { YM2610VGM } from "./ym2610b.js"
 
 const gunzip = util.promisify(zlib.gunzip);
 const gzip = util.promisify(zlib.gzip);
@@ -23,13 +23,13 @@ async function main() {
 	}
 
 	if (cli.chip == "ym2610b") {
-		const ym2610 = new YM2610();
-		ym2610.read(await readFile(cli.inputPath));
+		const vgm = new YM2610VGM();
+		vgm.read(await readFile(cli.inputPath));
 		if (cli.ssgAttenuation) {
-			ym2610.attenuateSSG(-cli.ssgAttenuation);
+			vgm.attenuateSSG(-cli.ssgAttenuation);
 		}
-		ym2610.optimize();
-		await writeFile(cli.outputPath, ym2610.write());
+		vgm.optimize();
+		await writeFile(cli.outputPath, vgm.write());
 	} else {
 		throw new Error(`Unknown chip: ${chip}`);
 	}
