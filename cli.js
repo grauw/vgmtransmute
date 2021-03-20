@@ -25,6 +25,7 @@ async function main() {
 	if (cli.chip == "ym2610b") {
 		const vgm = new YM2610VGM();
 		vgm.read(await readFile(cli.inputPath));
+		vgm.convertYM2608ToYM2610B();
 		if (cli.ssgAttenuation) {
 			vgm.attenuateSSG(-cli.ssgAttenuation);
 		}
