@@ -1,4 +1,4 @@
-import { VGM, YM2610Command, YM2608Command, DataBlockCommand } from "./vgm.js";
+import { VGM, YM2610Command, YM2608Command, DataBlockCommand, StreamSetup } from "./vgm.js";
 import { YM2608 } from "./ym2608.js";
 import { ADPCM } from "./adpcm.js";
 import { clamp } from "./utils.js";
@@ -99,6 +99,15 @@ export class YM2610VGM extends VGM {
 				for (let i = 8; i < size; i++) {
 					ym2608.setMemory(startAddress + i - 8, command.data[i]);
 				}
+			} else if (command instanceof StreamSetup && command.chipType == 0x07) {
+				let register = command.port << 8 | command.register;
+				if (register >= 0x010 && register < 0x020)
+					register += 0xF0;
+				if (register >= 0x100 && register < 0x10C)
+					register -= 0xF0;
+				if (register >= 0x10C && register < 0x130)
+					continue;
+				commands.push(new StreamSetup(command.streamId, 0x08, register >> 8, register & 0xFF));
 			} else {
 				commands.push(command);
 			}

@@ -63,6 +63,18 @@ export class VGM {
 				this.addCommand(new DataBlockCommand(dataType, data));
 			} else if (type >= 0x70 && type < 0x80) {
 				this.addCommand(new WaitCommand((type & 15) + 1));
+			} else if (type == 0x90) {
+				this.addCommand(new StreamSetup(readByte(), readByte(), readByte(), readByte()));
+			} else if (type == 0x91) {
+				this.addCommand(new StreamSetData(readByte(), readByte(), readByte(), readByte()));
+			} else if (type == 0x92) {
+				this.addCommand(new StreamSetFrequency(readByte(), readDoubleWord()));
+			} else if (type == 0x93) {
+				this.addCommand(new StreamStart(readByte(), readDoubleWord(), readByte(), readDoubleWord()));
+			} else if (type == 0x94) {
+				this.addCommand(new StreamStop(readByte()));
+			} else if (type == 0x95) {
+				this.addCommand(new StreamStartFast(readByte(), readWord(), readByte()));
 			} else {
 				throw new Error(`Unsupported command ${type.toString(16)} at address ${(address - 1).toString(16)}`);
 			}
@@ -131,6 +143,36 @@ export class VGM {
 			} else if (command instanceof LoopCommand) {
 				loopOffset = output.length;
 				loopSamples = totalSamples;
+			} else if (command instanceof StreamSetup) {
+				writeByte(0x90);
+				writeByte(command.streamId);
+				writeByte(command.chipType);
+				writeByte(command.port);
+				writeByte(command.register);
+			} else if (command instanceof StreamSetData) {
+				writeByte(0x91);
+				writeByte(command.streamId);
+				writeByte(command.dataBankId);
+				writeByte(command.stepSize);
+				writeByte(command.stepBase);
+			} else if (command instanceof StreamSetFrequency) {
+				writeByte(0x92);
+				writeByte(command.streamId);
+				writeDoubleWord(command.frequency);
+			} else if (command instanceof StreamStart) {
+				writeByte(0x93);
+				writeByte(command.streamId);
+				writeDoubleWord(command.dataStart);
+				writeByte(command.lengthMode);
+				writeDoubleWord(command.dataLength);
+			} else if (command instanceof StreamStop) {
+				writeByte(0x94);
+				writeByte(command.streamId);
+			} else if (command instanceof StreamStartFast) {
+				writeByte(0x95);
+				writeByte(command.streamId);
+				writeWord(command.blockId);
+				writeByte(command.flags);
 			} else {
 				throw new Error("Unsupported command.");
 			}
@@ -209,6 +251,60 @@ export class DataBlockCommand extends Command {
 		for (let i = 0; i < data.length; i++) {
 			this.data[i + 8] = data[i];
 		}
+	}
+}
+
+export class StreamSetup extends Command {
+	constructor(streamId, chipType, port, register) {
+		super();
+		this.streamId = streamId;
+		this.chipType = chipType;
+		this.port = port;
+		this.register = register;
+	}
+}
+
+export class StreamSetData extends Command {
+	constructor(streamId, dataBankId, stepSize, stepBase) {
+		super();
+		this.streamId = streamId;
+		this.dataBankId = dataBankId;
+		this.stepSize = stepSize;
+		this.stepBase = stepBase;
+	}
+}
+
+export class StreamSetFrequency extends Command {
+	constructor(streamId, frequency) {
+		super();
+		this.streamId = streamId;
+		this.frequency = frequency;
+	}
+}
+
+export class StreamStart extends Command {
+	constructor(streamId, dataStart, lengthMode, dataLength) {
+		super();
+		this.streamId = streamId;
+		this.dataStart = dataStart;
+		this.lengthMode = lengthMode;
+		this.dataLength = dataLength;
+	}
+}
+
+export class StreamStop extends Command {
+	constructor(streamId) {
+		super();
+		this.streamId = streamId;
+	}
+}
+
+export class StreamStartFast extends Command {
+	constructor(streamId, blockId, flags) {
+		super();
+		this.streamId = streamId;
+		this.blockId = blockId;
+		this.flags = flags;
 	}
 }
 
