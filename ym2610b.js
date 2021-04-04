@@ -16,7 +16,6 @@ class YM2610ADPCM {
 		}
 		while ((this.data.length & 0xFF) != 0) {
 			this.data.push(0x08);
-			// TODO: Go back to 0 rather than hold, to fix RIM
 		}
 		const end = this.data.length;
 		const sample = new YM2610ADPCMSample(this, start, end);
