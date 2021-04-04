@@ -17,12 +17,16 @@ export class YM2608 {
 		this.registers[address] = value;
 		switch (address) {
 			case 0x102:
-			case 0x103:
+			case 0x103: {
 				this.memoryAddress = this.getMemoryStart();
-			case 0x108:
+				break;
+			}
+			case 0x108: {
 				if ((this.registers[0x100] & 0xE0) == 0x60) {
 					this.memory[this.memoryAddress++] = value;
 				}
+				break;
+			}
 		}
 	}
 
