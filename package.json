@@ -5,8 +5,8 @@
 	"author": "Laurens Holst",
 	"license": "BSD-2-Clause",
 	"repository": {
-		"type": "hg",
-		"url": "https://hg.sr.ht/~grauw/vgmtransmute"
+		"type": "git",
+		"url": "git+https://github.com/grauw/vgmtransmute.git"
 	},
 	"type": "module",
 	"private": true,

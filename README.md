@@ -7,7 +7,7 @@ Project information
 -------------------
 
   * Author: Laurens Holst <laurens@grauw.nl>
-  * Source: <https://hg.sr.ht/~grauw/vgmtransmute>
+  * Source: <https://github.com/grauw/vgmtransmute>
   * License: Simplified BSD License
 
 Converts music in VGM format from one to another chip.
